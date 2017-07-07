@@ -16,22 +16,13 @@ As mentioned in the opening, when writing programs that communicate over a netwo
 
 All logical components that makes up network communications can be  represented using types from the net package including:
 
-- *Protocols* (IP, IP/TCP, IP/UDP) [protocol representation in `net`]
 - *Addressing* [address and host resolution in `net`]
+- *Protocols* (IP, IP/TCP, IP/UDP) [protocol representation in `net`]
 - *Network IO* [interfaces available for network communications]
 
 Furthermore, each API interface exposes a multitude of methods giving Go one of the most complete standard libraries for Internet programming supporting both `IPv4` and `IPv6`. 
 
-So now, let us take a look at the major themes found in the net package.
-
-### Protocols
-Many functions and other types, in the net packages, use a string literal to identify the protocol to use when communicating across the network.  The following lists the string values of network protocol that are supported in Go:
-```sh
-"ip",  "ip4",  "ip6"
-"tcp", "tcp4", "tcp6" 
-"udp", "udp4", "udp6"                        
-```
-The `4` suffix indicates a protocol for IPv4 and the `6` suffix indicates a protocol targeting IPv6.  When the string literal omits the version suffix, it targets IPv4 by default.
+So now, let us take a look at the major API themes found in the net package.
 
 ### Addressing
 One of the most basic primitives, when doing network programming, is the address.  It is used to identify networks and nodes interconnected together.  Many types and functions in the  `net` package support the representations of `IP` addresses using string literals as shown in the following:
@@ -55,13 +46,50 @@ The IP type exposes several methods that makes it easy to work and manipulate IP
 ```go
 <sample code>
 ```
-When we want to represent both the network and the address, Go provides interface type `net.Addr` which combines the representation of both the network protocol and the s defined below:
+The working with the IP protocol directly, the net package in Go uses type `IPAddr` to provide a richer representation of an IP address which is used in several functions and methods.
+
 ```go
-type Addr interface {
-    Network() string
-    String() string
+type IPAddr struct {
+        IP   IP
+        Zone string 
 }
 ```
+Similarly, functions and methods that work with `UDP` and `TCP` protocols directly have their own rich representation of addresses respectively.  For instance, type `UDPAddr` is shown below.
+```go
+type UDPAddr struct {
+        IP   IP
+        Port int
+        Zone string 
+}
+```
+Likewise, type `TCPAddr` is offered as a way for representing TCP/IP addresses as shown below.
+```go
+type IPAddr struct {
+        IP   IP
+        Port int
+        Zone string 
+}
+```
+
+### Protocols
+Many functions and other types, in the net packages, use string literals to identify the protocol used when communicating across the network.  The following lists the string values of network protocols that we will be discussing in this series:
+```sh
+"ip",  "ip4",  "ip6"
+"tcp", "tcp4", "tcp6" 
+"udp", "udp4", "udp6"                        
+```
+The suffix `4` indicates a protocol for IPv4 only and the suffix `6` indicates a protocol using IPv6 only.  When the string literal omits the version, it targets IPv4 by default.  
+
+For instance, the following calls function `Dial` (discussed later) providing it with the network protocol name as `"tcp"` and an address.
+
+```go
+Dial("tcp", "74.125.21.113:80")
+```
+When the network is `ip`, the string must include a protocol number (or name), separated by a colon.  For instance, the following function call specifies an IP network with the ICMP protocol.
+```go
+ResolveIPAddr("ip:icpm", "192.168.1.136")
+```
+
 
 # Topics 
 
