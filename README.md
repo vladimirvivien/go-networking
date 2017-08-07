@@ -14,14 +14,7 @@ Before we jump headfirst into writing networked programs in Go, let us do a quic
 ## The net Package
 As mentioned in the opening, when writing programs that communicate over a network in Go, you will likely start with the *net* package (https://golang.org/pkg/net).  This package, and its sub-packages, provide a rich API that exposes low-level networking primitives as well as application-level protocols such as HTTP.  For this discussion, we will focus on protocols such IP, UDP, and TCP.
 
-All logical components that makes up network communications are represented using types from the net package including:
-
-- *Addressing* [address and host resolution in `net`]
-- *Protocols* (IP, IP/TCP, IP/UDP) [protocol representation in `net`]
-- *Network IO* [interfaces available for network communications]
-- *Unix Socket* mentions support for Unix socket
-
-So now, let us take a look at the major API themes found in the net package.
+Before we dive head-first into our discussion, it is worth taking a high-level look at the `net` package.  There are some critical themes represented in the package that should be discussed before we dive into the details.  For instance, all logical components that makes up network communications are abstracted as types and supporting functions.  Let us take a look at some of these.
 
 ### Addressing
 One of the most basic primitives, when doing IP-based network programming, is the address.  Addresses are used to identify networks and network nodes interconnected together.  In the `net` package `IP` addresses can be represented using string literals with the dot notation for IPv4 and colon-delimited for IPv6 addresses as shown below:
@@ -37,27 +30,21 @@ var sshAddr = "[2607:f8b0:4002:c06::65]:22"
 As we explore the protocols in detail, we will see how each have their own typed representation of addresses such as `net.IPAddr`, `net.UDPAddr`, and `net.TCPAddr`.
 
 ### Protocols
-Another prominent theme in the net package is `protocol` representation.  Many functions and types, in the `net` package, use string literals to identify the protocol that is being used when communicating across the network.  The following lists the string values of network protocols that are supported:
+Another prominent theme in the net package is `protocol` representation.  Many functions and types, in the `net` package, use string literals to identify the protocol that is being used when communicating across the network.  The following lists the string identifier for the protocols that we will cover:
 ```sh
 "ip",  "ip4",  "ip6"
 "tcp", "tcp4", "tcp6" 
 "udp", "udp4", "udp6"                        
 ```
-The suffix `4` indicates a protocol for IPv4 only and the suffix `6` indicates a protocol using IPv6 only.  When the string literal omits the version, it targets IPv4 by default.  
+The suffix `4` indicates a protocol for IPv4 only and the suffix `6` indicates a protocol using IPv6 only.  When the string literal omits the version, it targets IPv4 by default.  We see this used many times during the video series when invoking functions and methods.
 
-For instance, the following calls function `Dial` (discussed later) providing it with the network protocol name as `"tcp"` and an address.
-
-```go
-Dial("tcp", "74.125.21.113:80")
-```
 ### Network communication
-When building networked programs, you will certainly need a way to connect nodes together for communication.  If you are building TCP-based applications, you will also need the followings:
+When building networked programs, you will certainly need a way to connect nodes together so they can communicate to exchange data. Depending on the nature of the network protocol you may also need: 
 
-- a way for the service to announce itself on the network at an available port
-- The service must be able to listen, accept, and handle incoming client conections
-- clients have to be able to communicate to services at a given address and port
+- the ability to announce the service on an available port
+- the ability to listen, accept, and handle incoming client connections
 
-The `net` package provides several interfaces that allow you to create connected program.  
+Let us look at how the `net` package provides support for creating programs that can communicate on the network:
 
 * *net.Conn* - this interface represents communication between two nodes on a network.  When writing networked application, eventually you will use an implementation of that interface to exchange data.  The net package comes with several implementations including `net.IPConn`, `net.UDPConn`, and `net.TCPConn` for low-level and protocol-specific functionalities.  For instance, streaming protocols such as TCP, exposes streaming IO semantics from `io.Reader` and `io.Writer` interfaces.  We will see how this is done as we get deeper into our sessions.
 
@@ -73,7 +60,7 @@ net.Dial("tcp", "64.233.177.102")
 ```
 We will see more examples of the Dial functions as we continue the video series.
 
-* *Unix socket* - Lastly for completeness, it is worth mentioning that the Go net package also supports *Unix domain socket* protocol for doing both streaming and packet based inter-process communications.  The protocols are identified as "unix", "unixgram", and "unixpacket" and uses type `net.UnixConn` to represent a connection.  This video series does not discuss detail about these protocols.  However, they use similar interfaces and follow the same idioms as the TCP and UDP protocol implementations.  This should make them fairly easy to learn and use. 
+* *Unix socket* - Lastly for completeness, it is worth mentioning that the `net` package also supports *Unix domain socket* protocol for doing both streaming and packet based inter-process communications.  The protocols are identified as "unix", "unixgram", and "unixpacket" and uses type `net.UnixConn` to represent a connection.  This video series does not discuss detail about these protocols.  However, they use similar interfaces and follow the same idioms as the TCP and UDP protocol implementations.  This should make them fairly easy to learn and use. 
 
 ## IP
 Here is a n example of how IP addresses can be represented as string literals.  In the string literal value, the IPv4 uses dot notation to separate address bytes while IPv6 uses colon separator.  In both call to `net.ParseIP()`, the function parses the address and return a typed representation of the address or `nil` if the address is invalid.
@@ -131,6 +118,7 @@ type IPAddr struct {
         Zone string 
 }
 ```
+
 
 # Topics 
 
