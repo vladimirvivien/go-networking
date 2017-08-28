@@ -34,7 +34,8 @@ One crucial function of a network API is the ability to resolve services, addres
 
 For instance the following program looks up the IP address for the given host. It uses
 function `net.LookupHost()` which returns a slice of string IP addresses.  
-```
+
+```go
 func main() {
 	flag.StringVar(&host, "host", "localhost", "host name to resolve")
 	flag.Parse()
@@ -56,7 +57,7 @@ to relies on OS system calls.
 
 This behavior can be overridden using the `GODEBUG` environment variale as shown.
 
-```
+```sh
 export GODEBUG=netdns=go    # use Go resolver
 export GODEBUG=netdns=cgo   # use C resolver
 ```
