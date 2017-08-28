@@ -29,6 +29,40 @@ var sshAddr = "[2607:f8b0:4002:c06::65]:22"
 ```
 As we explore the protocols in detail, we will see how each have their own typed representation of addresses such as `net.IPAddr`, `net.UDPAddr`, and `net.TCPAddr`.
 
+### Name and service resolution
+One crucial function of a network API is the ability to resolve services, addresses, and names from a given network.  The net package provides several functions to query naming and service information such as host names, IP, reverse lookup, NS, MX, and CNAME records.
+
+For instance the following program looks up the IP address for the given host. It uses
+function `net.LookupHost()` which returns a slice of string IP addresses.  
+```
+func main() {
+	flag.StringVar(&host, "host", "localhost", "host name to resolve")
+	flag.Parse()
+
+	addrs, err := net.LookupHost(host)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println(addrs)
+}
+```
+The net package uses `resolver strategy` to determined how resolve network names 
+depending on the operatng system. By default, the resolver will attempt to use a pure Go 
+mechanism that queries DNS directly to avoid OS-related thread penalties.  Given certain
+conditions and combinations, the resolver may fallback to using a C-implemented resolver
+to relies on OS system calls.
+
+This behavior can be overridden using the `GODEBUG` environment variale as shown.
+
+```
+export GODEBUG=netdns=go    # use Go resolver
+export GODEBUG=netdns=cgo   # use C resolver
+```
+
+
+
 ### Protocols
 Another prominent theme in the net package is `protocol` representation.  Many functions and types, in the `net` package, use string literals to identify the protocol that is being used when communicating across the network.  The following lists the string identifier for the protocols that we will cover:
 ```sh
