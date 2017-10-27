@@ -19,11 +19,4 @@ func main() {
 	} else {
 		fmt.Println(err)
 	}
-
-	local := ":8080"
-	if ip, port, err := net.SplitHostPort(local); err == nil {
-		fmt.Printf("ip=%s port=%s\n", ip, port)
-	} else {
-		fmt.Println(err)
-	}
 }
