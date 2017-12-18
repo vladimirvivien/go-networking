@@ -9,7 +9,7 @@ import (
 // Easiest way to create net.IP value is to use
 // net.ParseIP which parses a string value representation
 // of a IPv4 dot-separated or IPv6 colon-separated address.
-// This example net.ParseIP to parse an IP address provided
+// This example uses net.ParseIP to parse an IP address provided
 // from the command line and prints information about the address.
 func main() {
 	if len(os.Args) != 2 {

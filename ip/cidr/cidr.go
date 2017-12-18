@@ -16,6 +16,9 @@ func init() {
 	flag.StringVar(&cidr, "c", "", "the CIDR address")
 }
 
+// This program implements a CIDR subnet calculator.
+// It takes a CIDR address prefix an calculates ip-ranges,
+// total hosts, wildcard mask, etc.
 func main() {
 	flag.Parse()
 
@@ -31,8 +34,8 @@ func main() {
 	}
 
 	ones, totalBits := ipnet.Mask.Size()
-	size := totalBits - ones
-	totalHosts := math.Pow(2, float64(size))
+	size := totalBits - ones                 // usable bits
+	totalHosts := math.Pow(2, float64(size)) // 2^size
 	wildcardIP := wildcard(net.IP(ipnet.Mask))
 	last := lastIP(ip, net.IPMask(wildcardIP))
 
@@ -48,6 +51,8 @@ func main() {
 	fmt.Println()
 }
 
+// wildcard returns the opposite of the
+// the netmask for the network.
 func wildcard(mask net.IP) net.IP {
 	var ipVal net.IP
 	for _, octet := range mask {
@@ -56,12 +61,15 @@ func wildcard(mask net.IP) net.IP {
 	return ipVal
 }
 
+// lastIP calculates the highest address range
+// starting at the given IP
 func lastIP(ip net.IP, mask net.IPMask) net.IP {
-	ipIn := ip.To4()
+	ipIn := ip.To4() // is it an IPv4
 	if ipIn == nil {
-		ipIn = ip.To16()
+		ipIn = ip.To16() // is it IPv6
 	}
 	var ipVal net.IP
+	// apply network mask to each octet
 	for i, octet := range ipIn {
 		ipVal = append(ipVal, octet|mask[i])
 	}
