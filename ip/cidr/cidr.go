@@ -33,6 +33,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Given IPv4 block 192.168.100.14/24
+	// The followings uses IPNet to get:
+	// - The routing address for the subnet (i.e. 192.168.100.0)
+	// - one-bits of the network mask (24 out of 32 total)
+	// - The subnetmask (i.e. 255.255.255.0)
+	// - Total hosts in the network (2 ^(host identifer bits) or 2^8)
+	// - Wildcard the inverse of subnet mask (i.e. 0.0.0.255)
+	// - The maximum address of the subnet (i.e. 192.168.100.255)
 	ones, totalBits := ipnet.Mask.Size()
 	size := totalBits - ones                 // usable bits
 	totalHosts := math.Pow(2, float64(size)) // 2^size
@@ -67,6 +75,9 @@ func lastIP(ip net.IP, mask net.IPMask) net.IP {
 	ipIn := ip.To4() // is it an IPv4
 	if ipIn == nil {
 		ipIn = ip.To16() // is it IPv6
+		if ipIn == nil {
+			return nil
+		}
 	}
 	var ipVal net.IP
 	// apply network mask to each octet

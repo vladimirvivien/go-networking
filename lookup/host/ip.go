@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"net"
@@ -21,7 +22,8 @@ func main() {
 	flag.StringVar(&host, "host", "localhost", "host name to resolve")
 	flag.Parse()
 
-	addrs, err := net.LookupIP(host)
+	res := net.Resolver{PreferGo: true}
+	addrs, err := res.LookupIPAddr(context.Background(), host)
 	if err != nil {
 		fmt.Println(err)
 		return
