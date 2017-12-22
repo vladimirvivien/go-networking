@@ -22,7 +22,7 @@ func init() {
 	flag.StringVar(&host, "host", "", "Host address for DNS operation")
 	flag.BoolVar(&ns, "ns", false, "Host name server lookup")
 	flag.BoolVar(&mx, "mx", false, "Host domain mail server lookup")
-	flag.BoolVar(&mx, "txt", false, "Host domain TXT lookup")
+	flag.BoolVar(&txt, "txt", false, "Host domain TXT lookup")
 	flag.BoolVar(&cname, "cname", false, "Host CNAME lookup")
 }
 
@@ -93,7 +93,7 @@ func (ls *lsdns) txtLkp(host string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("MX lookup")
+	fmt.Println("TXT lookup")
 	fmt.Println("---------")
 	for _, txt := range txts {
 		fmt.Printf("%-17s%-11s\n", host, txt)
