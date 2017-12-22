@@ -10,36 +10,46 @@ import (
 )
 
 // This program is a super simple network time protocol server.
-// It returns the number of seconds since 1900 upto now.
+// It uses UDP to return the number of seconds since 1900.
 func main() {
-	var host string
-	flag.StringVar(&host, "host", ":1123", "server address")
+	var path string
+	flag.StringVar(&path, "p", "/tmp/time.sock", "NTP server socket endpoint")
 	flag.Parse()
 
 	// Creaets a UDP address
-	addr, err := net.ResolveUDPAddr("udp", host)
+	addr, err := net.ResolveUnixAddr("unixgram", path)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	// setup UDP socket and announce on network
-	conn, err := net.ListenUDP("udp", addr)
+	// get a socket, announce service on network
+	// Because it's connectionless, the same socket can be
+	// reused to handle with multiple request/responses.
+	conn, err := net.ListenUnixgram("unixgram", addr)
 	if err != nil {
 		fmt.Println("failed to create socket:", err)
 		os.Exit(1)
 	}
 	defer conn.Close()
+	fmt.Printf("listening on (unixgram) %s\n", conn.LocalAddr())
 
-	fmt.Printf("listening for time request: %s (%s)\n", addr, conn.LocalAddr())
+	for {
+		// block to read incoming requests
+		_, raddr, err := conn.ReadFromUnix(make([]byte, 48))
+		if err != nil {
+			fmt.Println("error getting request:", err)
+			os.Exit(1)
+		}
+		fmt.Println("got time request...")
 
-	// read incoming request, but throw it away
-	_, target, err := conn.ReadFrom(make([]byte, 48))
-	if err != nil {
-		fmt.Println("error getting request:", err)
-		os.Exit(1)
+		// handle request
+		go handleRequest(conn, raddr)
 	}
+}
 
+// handle incoming requests
+func handleRequest(conn *net.UnixConn, addr *net.UnixAddr) {
 	// get seconds and fractional secs since 1900
 	secs, fracs := getNTPSeconds(time.Now())
 
@@ -52,7 +62,8 @@ func main() {
 	binary.BigEndian.PutUint32(rsp[44:], uint32(fracs))
 
 	// send data
-	if _, err := conn.WriteTo(rsp, target); err != nil {
+	fmt.Printf("writing response %v to %v\n", rsp, addr)
+	if _, err := conn.WriteToUnix(rsp, addr); err != nil {
 		fmt.Println("err sending data:", err)
 		os.Exit(1)
 	}

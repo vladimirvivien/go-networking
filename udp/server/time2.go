@@ -12,20 +12,27 @@ import (
 // This program is a super simple network time protocol server.
 // It uses UDP to return the number of seconds since 1900.
 func main() {
-	var host string
-	flag.StringVar(&host, "host", ":1123", "server address")
+	var port string
+	flag.StringVar(&port, "p", "1123", "port value")
 	flag.Parse()
 
-	// get a UDP socket, announce service on network
-	// Because it's connectionless, the socket can be
-	// reused to communicate with any incoming requests.
-	conn, err := net.ListenPacket("udp", host)
+	// Creaets a UDP address
+	addr, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%s", port))
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	// get a socket, announce service on network
+	// Because it's connectionless, the same socket can be
+	// reused to handle with multiple request/responses.
+	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {
 		fmt.Println("failed to create socket:", err)
 		os.Exit(1)
 	}
 	defer conn.Close()
-	fmt.Printf("listening for time requests on %s\n", conn.LocalAddr())
+	fmt.Printf("listening on (udp) %s\n", conn.LocalAddr())
 
 	for {
 		// block to read incoming requests
@@ -40,7 +47,8 @@ func main() {
 	}
 }
 
-func handleRequest(conn net.PacketConn, addr net.Addr) {
+// handle incoming requests
+func handleRequest(conn *net.UDPConn, addr net.Addr) {
 	// get seconds and fractional secs since 1900
 	secs, fracs := getNTPSeconds(time.Now())
 

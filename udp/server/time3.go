@@ -9,37 +9,68 @@ import (
 	"time"
 )
 
+var (
+	host    string
+	network string
+)
+
 // This program is a super simple network time protocol server.
-// It returns the number of seconds since 1900 upto now.
+// It uses UDP to return the number of seconds since 1900.
 func main() {
-	var host string
 	flag.StringVar(&host, "host", ":1123", "server address")
+	flag.StringVar(&network, "n", "udp", "the network protocol [udp,unixgram]")
 	flag.Parse()
 
-	// Creaets a UDP address
-	addr, err := net.ResolveUDPAddr("udp", host)
-	if err != nil {
-		fmt.Println(err)
+	// validate network protocol
+	switch network {
+	case "udp", "unixgram":
+	default:
+		fmt.Println("unsupported network:", network)
 		os.Exit(1)
 	}
 
-	// setup UDP socket and announce on network
-	conn, err := net.ListenUDP("udp", addr)
+	// get a socket, announce service on network
+	// Because it's connectionless, the same socket can be
+	// reused to handle with multiple request/responses.
+	conn, err := net.ListenPacket(network, host)
 	if err != nil {
 		fmt.Println("failed to create socket:", err)
 		os.Exit(1)
 	}
 	defer conn.Close()
+	fmt.Printf("listening on (%s)%s\n", network, conn.LocalAddr())
 
-	fmt.Printf("listening for time request: %s (%s)\n", addr, conn.LocalAddr())
+	for {
+		// block to read incoming requests
+		_, target, err := conn.ReadFrom(make([]byte, 48))
+		if err != nil {
+			fmt.Println("error getting request:", err)
+			os.Exit(1)
+		}
 
-	// read incoming request, but throw it away
-	_, target, err := conn.ReadFrom(make([]byte, 48))
-	if err != nil {
-		fmt.Println("error getting request:", err)
-		os.Exit(1)
+		var addr net.Addr
+		if network == "udp" {
+			addr = target
+		}
+		if network == "unixgram" {
+			addr, err = net.ResolveUnixAddr("unixgram", host)
+			if err != nil {
+				fmt.Println("failed resolve addr:", err)
+				os.Exit(1)
+			}
+		}
+
+		// handle request
+		fmt.Println("sending resonse to:", addr)
+		go handleRequest(conn, addr)
 	}
+}
 
+// handleRequest handles incoming request and sends current
+// time.  If network=udp, the passed address is used.
+// If network=unixgram, then the global host address path is
+// used for both read and write.
+func handleRequest(conn net.PacketConn, addr net.Addr) {
 	// get seconds and fractional secs since 1900
 	secs, fracs := getNTPSeconds(time.Now())
 
@@ -52,10 +83,11 @@ func main() {
 	binary.BigEndian.PutUint32(rsp[44:], uint32(fracs))
 
 	// send data
-	if _, err := conn.WriteTo(rsp, target); err != nil {
+	if _, err := conn.WriteTo(rsp, addr); err != nil {
 		fmt.Println("err sending data:", err)
 		os.Exit(1)
 	}
+
 }
 
 // getNTPSecs decompose current time as NTP seconds
