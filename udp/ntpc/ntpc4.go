@@ -9,13 +9,18 @@ import (
 	"time"
 )
 
-// This example of the NTP client uses unix datagram
-// instead of the user datagrap protocol (udp) to communicate
-// to a time server. Obviously, the server must use unix datagram
-// as well.
+// This program implements an NTP client that is capable of
+// using either UDP or Unix Domain Socket datagram.  To do this,
+// the program uses the Dialer to explicitly configure the client
+// dialing process.
+//
+// The program uses -host to specify the remote address
+// (or socket path) and -n for the network protocl ("udp" or "datagram").
 func main() {
-	var path string
-	flag.StringVar(&path, "p", "/tmp/time.sock", "NTP client sock endpoint")
+	var host string
+	var network string
+	flag.StringVar(&host, "h", "us.pool.ntp.org:123", "NTP host")
+	flag.StringVar(&network, "n", "udp", "network protocol to use")
 	flag.Parse()
 
 	// req data packet is a 48-byte long value
@@ -29,15 +34,20 @@ func main() {
 	// rsp byte slice used to receive server response
 	rsp := make([]byte, 48)
 
-	// create UDPAddr
-	raddr, err := net.ResolveUnixAddr("unixgram", path)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	// Create a Dialer which allows us to specify dialing options.
+	// We will need this a bit later to configure the local address
+	// when the program is using "unixgram"
+	dialer := net.Dialer{}
+
+	// IMPORTANT: when network is "unixgram", the local address
+	// must be created and set explicitly (see ntpc2.go).
+	if network == "unixgram" {
+		laddr := &net.UnixAddr{Name: fmt.Sprintf("%s-client", host), Net: network}
+		dialer.LocalAddr = laddr
 	}
-	laddr := &net.UnixAddr{Name: fmt.Sprintf("%s-client", raddr.Name), Net: "unixgram"}
-	// setup connection socket
-	conn, err := net.DialUnix("unixgram", laddr, raddr)
+
+	// Setup connection (net.Conn) with Dial()
+	conn, err := dialer.Dial(network, host)
 	if err != nil {
 		fmt.Printf("failed to connect: %v\n", err)
 		os.Exit(1)
@@ -48,16 +58,18 @@ func main() {
 		}
 	}()
 
-	fmt.Printf("ntp time from (uinxgram) (%s)\n", conn.RemoteAddr())
+	// Once connection is established, the code pattern
+	// is the same as in the previos impl.
+
+	fmt.Printf("time from (%s) (%s)\n", network, conn.RemoteAddr())
 
 	// send time request
-	// write packet ntp to IO
 	if _, err = conn.Write(req); err != nil {
 		fmt.Printf("failed to send request: %v\n", err)
 		os.Exit(1)
 	}
 
-	// now, block to receive server response
+	// block to receive server response
 	read, err := conn.Read(rsp)
 	if err != nil {
 		fmt.Printf("failed to receive response: %v\n", err)

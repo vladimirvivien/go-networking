@@ -14,14 +14,19 @@ var (
 	network string
 )
 
-// This program is a super simple network time protocol server.
-// It uses UDP to return the number of seconds since 1900.
+// This program is a simple Network Time Protocol server that can use
+// either UDP or the Unix Domain Socket Datagram protocol.  The program
+// uses the ListenPacket to create a PacketConn generic connection.
+//
+// The server returns the number of seconds since 1900 up to the
+// current time. It uses command-line flag -h to specify server
+// addr:port and -n to specify network protocol ["udp","unixgram"]
 func main() {
-	flag.StringVar(&host, "host", ":1123", "server address")
+	flag.StringVar(&host, "h", ":1123", "server address")
 	flag.StringVar(&network, "n", "udp", "the network protocol [udp,unixgram]")
 	flag.Parse()
 
-	// validate network protocol
+	// validate network protocols
 	switch network {
 	case "udp", "unixgram":
 	default:
@@ -29,9 +34,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	// get a socket, announce service on network
-	// Because it's connectionless, the same socket can be
-	// reused to handle with multiple request/responses.
+	// create a generic packet connection, PacketConn, with
+	// ListenPacket. PacketConn implements common ReadFrom and
+	// WriteTo that are protocol agnostic.
 	conn, err := net.ListenPacket(network, host)
 	if err != nil {
 		fmt.Println("failed to create socket:", err)
@@ -40,29 +45,28 @@ func main() {
 	defer conn.Close()
 	fmt.Printf("listening on (%s)%s\n", network, conn.LocalAddr())
 
+	// request/response loop
 	for {
 		// block to read incoming requests
-		_, target, err := conn.ReadFrom(make([]byte, 48))
+		// since we are using a sessionless proto, each request can
+		// potentially go to a different client.  Therefore, the ReadFrom
+		// operation returns the remote address (saved in laddr)
+		// where to send the response.
+		// NOTE: use of generic ReadFrom instead of ReadFromXXX
+		_, raddr, err := conn.ReadFrom(make([]byte, 48))
 		if err != nil {
 			fmt.Println("error getting request:", err)
 			os.Exit(1)
 		}
 
-		var addr net.Addr
-		if network == "udp" {
-			addr = target
-		}
-		if network == "unixgram" {
-			addr, err = net.ResolveUnixAddr("unixgram", host)
-			if err != nil {
-				fmt.Println("failed resolve addr:", err)
-				os.Exit(1)
-			}
+		// ensure raddr is set
+		if raddr == nil {
+			fmt.Println("warning: request missing remote addr")
+			continue
 		}
 
 		// handle request
-		fmt.Println("sending resonse to:", addr)
-		go handleRequest(conn, addr)
+		go handleRequest(conn, raddr)
 	}
 }
 

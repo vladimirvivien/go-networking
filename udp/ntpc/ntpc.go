@@ -9,11 +9,12 @@ import (
 	"time"
 )
 
+// This program implements a simple NTP client over UDP
+// to communicate with the remote server which is
+// specified using command-line parameter -h.
 func main() {
 	var host string
-	var network string
-	flag.StringVar(&host, "host", "us.pool.ntp.org:123", "NTP host")
-	flag.StringVar(&network, "n", "udp", "network protocol to use")
+	flag.StringVar(&host, "h", "us.pool.ntp.org:123", "NTP host")
 	flag.Parse()
 
 	// req data packet is a 48-byte long value
@@ -27,8 +28,14 @@ func main() {
 	// rsp byte slice used to receive server response
 	rsp := make([]byte, 48)
 
+	// create UDPAddr
+	addr, err := net.ResolveUDPAddr("udp", host)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	// setup connection socket
-	conn, err := net.Dial(network, host)
+	conn, err := net.DialUDP("udp", nil, addr)
 	if err != nil {
 		fmt.Printf("failed to connect: %v\n", err)
 		os.Exit(1)
@@ -39,16 +46,18 @@ func main() {
 		}
 	}()
 
-	fmt.Printf("requesting time from %s (%s)\n", host, conn.RemoteAddr())
+	fmt.Printf("time from (udp) %s\n", conn.RemoteAddr())
+
+	// Once connection is established, the code pattern
+	// is the same as in the other impl.
 
 	// send time request
-	// write packet ntp to IO
 	if _, err = conn.Write(req); err != nil {
 		fmt.Printf("failed to send request: %v\n", err)
 		os.Exit(1)
 	}
 
-	// now, block to receive server response
+	// block to receive server response
 	read, err := conn.Read(rsp)
 	if err != nil {
 		fmt.Printf("failed to receive response: %v\n", err)

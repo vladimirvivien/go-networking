@@ -9,9 +9,11 @@ import (
 	"time"
 )
 
+// This program implements an NTP client over Unix Domain Socket
+// Datagram. The -h flag is used to specify the socket path.
 func main() {
-	var host string
-	flag.StringVar(&host, "host", "us.pool.ntp.org:123", "NTP host")
+	var path string
+	flag.StringVar(&path, "h", "/tmp/time.sock", "NTP client sock endpoint")
 	flag.Parse()
 
 	// req data packet is a 48-byte long value
@@ -25,14 +27,21 @@ func main() {
 	// rsp byte slice used to receive server response
 	rsp := make([]byte, 48)
 
-	// create UDPAddr
-	addr, err := net.ResolveUDPAddr("udp", host)
+	// create a remote address bound to the server socket
+	raddr, err := net.ResolveUnixAddr("unixgram", path)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	// setup connection socket
-	conn, err := net.DialUDP("udp", nil, addr)
+
+	// IMPORTANT: create a separate local address that is bound
+	// to a different socket for the client.  This is not done
+	// automatically when using unix socket datagram.  Here, the
+	// local address is given by <remote_socket_path>-client
+	laddr := &net.UnixAddr{Name: fmt.Sprintf("%s-client", raddr.Name), Net: "unixgram"}
+
+	// setup a connection (net.UnixConn) using net.DialUnix
+	conn, err := net.DialUnix("unixgram", laddr, raddr)
 	if err != nil {
 		fmt.Printf("failed to connect: %v\n", err)
 		os.Exit(1)
@@ -43,16 +52,18 @@ func main() {
 		}
 	}()
 
-	fmt.Printf("requesting time from %s (%s)\n", host, conn.RemoteAddr())
+	fmt.Printf("time from (uinxgram) (%s)\n", conn.RemoteAddr())
+
+	// Once connection is established, the code pattern
+	// is the same as in the other impl.
 
 	// send time request
-	// write packet ntp to IO
 	if _, err = conn.Write(req); err != nil {
 		fmt.Printf("failed to send request: %v\n", err)
 		os.Exit(1)
 	}
 
-	// now, block to receive server response
+	// block to receive server response
 	read, err := conn.Read(rsp)
 	if err != nil {
 		fmt.Printf("failed to receive response: %v\n", err)

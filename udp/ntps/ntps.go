@@ -9,21 +9,26 @@ import (
 	"time"
 )
 
-// This program is a super simple network time protocol server.
-// It returns the number of seconds since 1900 upto now.
+// This program is a simple Network Time Protocol server over UDP.
+// The implementation uses a UDPConn and ListenUDP to manage requests.
+// The server returns the number of seconds since 1900 up to the
+// current time.
+
+// Again this is a simple server, it dies after sending the response.
+// It uses command-line flag -h to specify server addr:port.
 func main() {
 	var host string
-	flag.StringVar(&host, "host", ":1123", "server address")
+	flag.StringVar(&host, "h", ":1123", "server address")
 	flag.Parse()
 
-	// Creaets a UDP address
+	// Create a UDP host addres
 	addr, err := net.ResolveUDPAddr("udp", host)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	// setup UDP socket and announce on network
+	// setup connection UDPConn with ListenUDP
 	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {
 		fmt.Println("failed to create socket:", err)
@@ -31,12 +36,24 @@ func main() {
 	}
 	defer conn.Close()
 
-	fmt.Printf("listening for time request: %s (%s)\n", addr, conn.LocalAddr())
+	fmt.Printf("listening for time requests: (udp) %s\n", conn.LocalAddr())
 
-	// read incoming request, but throw it away
-	_, target, err := conn.ReadFrom(make([]byte, 48))
+	// From this point, the remainder of the code simply
+	// reads the incoming request and send a reponse.
+
+	// read incoming requests.
+	// since we are using a sessionless proto, each request can
+	// potentially go to a different client.  Therefore, the ReadFromXXX
+	// operation returns the remote address (saved in raddr)
+	// where to send the response.
+	_, raddr, err := conn.ReadFromUDP(make([]byte, 48))
 	if err != nil {
 		fmt.Println("error getting request:", err)
+		os.Exit(1)
+	}
+	// ensure laddr is set
+	if raddr == nil {
+		fmt.Println("request missing remote addr")
 		os.Exit(1)
 	}
 
@@ -52,7 +69,7 @@ func main() {
 	binary.BigEndian.PutUint32(rsp[44:], uint32(fracs))
 
 	// send data
-	if _, err := conn.WriteTo(rsp, target); err != nil {
+	if _, err := conn.WriteToUDP(rsp, raddr); err != nil {
 		fmt.Println("err sending data:", err)
 		os.Exit(1)
 	}

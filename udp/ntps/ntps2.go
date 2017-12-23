@@ -9,8 +9,14 @@ import (
 	"time"
 )
 
-// This program is a super simple network time protocol server.
-// It uses UDP to return the number of seconds since 1900.
+// This program is a simple Network Time Protocol server over Unix Domain Socket Datagram.
+// The implementation uses a UnixConn and ListenUnix to manage requests.
+// The server returns the number of seconds since 1900 up to the
+// current time.
+
+// This server is a bit more robust. It handles requests in a loop,
+// allowing it to service multiple clients.
+// It uses command-line flag -h to specify server addr:port.
 func main() {
 	var path string
 	flag.StringVar(&path, "p", "/tmp/time.sock", "NTP server socket endpoint")
@@ -23,9 +29,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// get a socket, announce service on network
-	// Because it's connectionless, the same socket can be
-	// reused to handle with multiple request/responses.
+	// setup connection UnixConn with ListenUnixgram
 	conn, err := net.ListenUnixgram("unixgram", addr)
 	if err != nil {
 		fmt.Println("failed to create socket:", err)
@@ -34,16 +38,24 @@ func main() {
 	defer conn.Close()
 	fmt.Printf("listening on (unixgram) %s\n", conn.LocalAddr())
 
+	// request/response loop
 	for {
 		// block to read incoming requests
+		// since we are using a sessionless proto, each request can
+		// potentially go to a different client.  Therefore, the ReadFromXXX
+		// operation returns the remote address (saved in raddr)
+		// where to send the response.
 		_, raddr, err := conn.ReadFromUnix(make([]byte, 48))
 		if err != nil {
 			fmt.Println("error getting request:", err)
 			os.Exit(1)
 		}
-		fmt.Println("got time request...")
-
-		// handle request
+		// ensure raddr is set
+		if raddr == nil {
+			fmt.Println("warning: request missing remote addr")
+			continue
+		}
+		// go handle request
 		go handleRequest(conn, raddr)
 	}
 }
@@ -61,7 +73,7 @@ func handleRequest(conn *net.UnixConn, addr *net.UnixAddr) {
 	// write seconds (as uint32) in buffer at [44:47]
 	binary.BigEndian.PutUint32(rsp[44:], uint32(fracs))
 
-	// send data
+	// send response to client
 	fmt.Printf("writing response %v to %v\n", rsp, addr)
 	if _, err := conn.WriteToUnix(rsp, addr); err != nil {
 		fmt.Println("err sending data:", err)

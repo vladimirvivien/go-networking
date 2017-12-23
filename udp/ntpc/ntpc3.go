@@ -9,9 +9,13 @@ import (
 	"time"
 )
 
+// This program implements a simple NTP client over UDP.
+// It uses the generic net.Dial function create connection.
+// This makes the code more generic and easy to change to
+// support other protocols.
 func main() {
 	var host string
-	flag.StringVar(&host, "host", "us.pool.ntp.org:123", "NTP host")
+	flag.StringVar(&host, "h", "us.pool.ntp.org:123", "NTP host")
 	flag.Parse()
 
 	// req data packet is a 48-byte long value
@@ -25,7 +29,7 @@ func main() {
 	// rsp byte slice used to receive server response
 	rsp := make([]byte, 48)
 
-	// setup connection socket
+	// setup generic connection (net.Conn) using net.Dial
 	conn, err := net.Dial("udp", host)
 	if err != nil {
 		fmt.Printf("failed to connect: %v\n", err)
@@ -39,14 +43,16 @@ func main() {
 
 	fmt.Printf("requesting time from %s (%s)\n", host, conn.RemoteAddr())
 
+	// Once connection is established, the code pattern
+	// is the same as in the other impl.
+
 	// send time request
-	// write packet ntp to IO
 	if _, err = conn.Write(req); err != nil {
 		fmt.Printf("failed to send request: %v\n", err)
 		os.Exit(1)
 	}
 
-	// now, block to receive server response
+	//block to receive server response
 	read, err := conn.Read(rsp)
 	if err != nil {
 		fmt.Printf("failed to receive response: %v\n", err)
