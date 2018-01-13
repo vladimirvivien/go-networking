@@ -10,10 +10,10 @@ import (
 )
 
 // This program implements an NTP client over Unix Domain Socket
-// Datagram. The -h flag is used to specify the socket path.
+// Datagram. The -e flag is used to specify the socket path.
 func main() {
 	var path string
-	flag.StringVar(&path, "h", "/tmp/time.sock", "NTP client sock endpoint")
+	flag.StringVar(&path, "e", "/tmp/time.sock", "NTP client sock endpoint")
 	flag.Parse()
 
 	// req data packet is a 48-byte long value

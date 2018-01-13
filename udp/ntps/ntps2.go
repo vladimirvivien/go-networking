@@ -9,20 +9,20 @@ import (
 	"time"
 )
 
-// This program is a simple Network Time Protocol server over Unix Domain Socket Datagram.
-// The implementation uses a UnixConn and ListenUnix to manage requests.
+// This program is a simple Network Time Protocol server over
+// Unix Domain Socket instead of UDP. The implementation uses
+// ListenUnixgram and UnixConn to manage requests.
 // The server returns the number of seconds since 1900 up to the
 // current time.
 
-// This server is a bit more robust. It handles requests in a loop,
-// allowing it to service multiple clients.
-// It uses command-line flag -h to specify server addr:port.
+// Usage:
+// ntps -e <host address endpoint>
 func main() {
 	var path string
-	flag.StringVar(&path, "p", "/tmp/time.sock", "NTP server socket endpoint")
+	flag.StringVar(&path, "e", "/tmp/time.sock", "NTP server socket endpoint")
 	flag.Parse()
 
-	// Creaets a UDP address
+	// Creaets a UnixAddr address
 	addr, err := net.ResolveUnixAddr("unixgram", path)
 	if err != nil {
 		fmt.Println(err)

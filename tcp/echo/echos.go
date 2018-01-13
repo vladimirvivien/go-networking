@@ -51,7 +51,7 @@ func main() {
 	}
 }
 
-// handleConnectino reads request from connection
+// handleConnection reads request from connection
 // with conn.Read() then write response using
 // conn.Write().  Then the connection is closed.
 func handleConnection(conn *net.TCPConn) {

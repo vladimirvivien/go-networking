@@ -15,10 +15,12 @@ import (
 // current time.
 
 // Again this is a simple server, it dies after sending the response.
-// It uses command-line flag -h to specify server addr:port.
+
+// Usage:
+// ntps -e <host address endpoint>
 func main() {
 	var host string
-	flag.StringVar(&host, "h", ":1123", "server address")
+	flag.StringVar(&host, "e", ":1123", "server address")
 	flag.Parse()
 
 	// Create a UDP host addres

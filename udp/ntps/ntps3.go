@@ -19,16 +19,16 @@ var (
 // uses the ListenPacket to create a PacketConn generic connection.
 //
 // The server returns the number of seconds since 1900 up to the
-// current time. It uses command-line flag -h to specify server
+// current time. It uses command-line flag -e to specify server
 // addr:port and -n to specify network protocol ["udp","unixgram"]
 func main() {
-	flag.StringVar(&host, "h", ":1123", "server address")
+	flag.StringVar(&host, "e", ":1123", "server address")
 	flag.StringVar(&network, "n", "udp", "the network protocol [udp,unixgram]")
 	flag.Parse()
 
 	// validate network protocols
 	switch network {
-	case "udp", "unixgram":
+	case "udp", "udp4", "udp6", "unixgram":
 	default:
 		fmt.Println("unsupported network:", network)
 		os.Exit(1)

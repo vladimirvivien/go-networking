@@ -19,7 +19,7 @@ import (
 func main() {
 	var host string
 	var network string
-	flag.StringVar(&host, "h", "us.pool.ntp.org:123", "NTP host")
+	flag.StringVar(&host, "e", "us.pool.ntp.org:123", "NTP host")
 	flag.StringVar(&network, "n", "udp", "network protocol to use")
 	flag.Parse()
 

@@ -26,7 +26,7 @@ func main() {
 	}
 
 	// announce service using ListenUnix
-	// which creates a ListenUnix listener
+	// which creates a UnixListener listener
 	l, err := net.ListenUnix("unix", laddr)
 	if err != nil {
 		fmt.Println(err)
