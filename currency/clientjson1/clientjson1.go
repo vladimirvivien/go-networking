@@ -19,8 +19,11 @@ const prompt = "currency"
 // and receives JSON-encoded array of currency information directly
 // over TCP or unix domain socket.
 //
+// Focus:
 // This program highlights the use of IO streaming, data serialization,
-// and client-side error handling.
+// and client-side error handling. It also shows how to configure the dialer
+// to setup settings such as timeout and KeepAlive values.  Futher,
+// the code also implements a simple connection-retry strategy when connecting.
 //
 // Usage: client [options]
 // options:

@@ -32,11 +32,10 @@ var (
 // as JSON array of objects and sent to the client.
 //
 // Focus:
-// This version of the code improves on the robustness of the server
-// by introducing code to parse the network error and implement connection
-// retry logic.  When establishing connection with the client, if that fails
-// we can check to see if it is a temporary failure and attempt to retry the
-// connection.
+// This version of the code continues to improve on the robustness of
+// the server code by introducing configuration for read and write timeout
+// values.  This ensures that a client cannot hold a connection hostage by
+// taking a long time to send or receive data.
 //
 // Testing:
 // Netcat can be used for rudimentary testing.  However, use clientjsonX
@@ -114,34 +113,39 @@ func handleConnection(conn net.Conn) {
 		}
 	}()
 
+	// set initial deadline prior to entering
+	// the client request/response loop to 45 seconds.
+	// This means that the client has 45 seconds to send
+	// its initial request or loose the connection.
+	if err := conn.SetDeadline(time.Now().Add(time.Second * 45)); err != nil {
+		log.Println("failed to set deadline:", err)
+		return
+	}
+
 	// command-loop
 	for {
 		dec := json.NewDecoder(conn)
-		// Next decode the incoming data into Go value curr.CurrencyRequest
 		var req curr.CurrencyRequest
 		if err := dec.Decode(&req); err != nil {
-			// json.Decode() could return decoding err,
-			// io err, or networking err.  This makes error handling
-			// a little more complex.
-
-			// handle error based on error type
 			switch err := err.(type) {
 			//network error: disconnect
 			case net.Error:
-				// dont continue, break connection
+				// is it a timeout error?
+				// A deadline policy maybe implemented here using a decreasing
+				// grace period that eventually causes an error if reached.
+				// Here we just reject the connection if timeout is reached.
+				if err.Timeout() {
+					fmt.Println("deadline reached, disconnecting...")
+				}
 				fmt.Println("network error:", err)
 				return
-
-			//other errors: send error info to client, then continue
 			default:
 				if err == io.EOF {
 					fmt.Println("closing connection:", err)
 					return
 				}
-				// encode curr.CurrencyError to send to client
 				enc := json.NewEncoder(conn)
 				if encerr := enc.Encode(&curr.CurrencyError{Error: err.Error()}); encerr != nil {
-					// if failure at this point, drop connection
 					fmt.Println("failed error encoding:", encerr)
 					return
 				}
@@ -152,7 +156,7 @@ func handleConnection(conn net.Conn) {
 		// search currencies, result is []curr.Currency
 		result := curr.Find(currencies, req.Get)
 
-		// encode result to JSON array
+		// send result
 		enc := json.NewEncoder(conn)
 		if err := enc.Encode(&result); err != nil {
 			switch err := err.(type) {
@@ -166,6 +170,12 @@ func handleConnection(conn net.Conn) {
 				}
 				continue
 			}
+		}
+
+		// renew deadline for 45 secs later
+		if err := conn.SetDeadline(time.Now().Add(time.Second * 90)); err != nil {
+			fmt.Println("failed to set deadline:", err)
+			return
 		}
 	}
 }
