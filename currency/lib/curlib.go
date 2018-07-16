@@ -15,8 +15,7 @@ type Currency struct {
 }
 
 type CurrencyRequest struct {
-	Get   string `json:"get"`
-	Limit int    `json:limit`
+	Get string `json:"get"`
 }
 
 type CurrencyError struct {

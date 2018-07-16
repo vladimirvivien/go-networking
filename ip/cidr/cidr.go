@@ -69,8 +69,10 @@ func wildcard(mask net.IP) net.IP {
 	return ipVal
 }
 
-// lastIP calculates the highest address range
-// starting at the given IP
+// lastIP calculates the highest addressable IP for given
+// for a given subnet. It Loops through each octet of the
+// subnet's IP address and applies bitwise OR operation
+// to each corresponding octet from the mask value.
 func lastIP(ip net.IP, mask net.IPMask) net.IP {
 	ipIn := ip.To4() // is it an IPv4
 	if ipIn == nil {
