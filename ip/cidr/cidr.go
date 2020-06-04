@@ -52,7 +52,7 @@ func main() {
 	fmt.Println("------------------------------------------------")
 	fmt.Printf("CIDR Block:     %s\n", cidr)
 	fmt.Printf("Network:        %s\n", ipnet.IP)
-	fmt.Printf("IP Range:       %s - %s\n", ip, last)
+	fmt.Printf("IP Range:       %s - %s\n", ipnet.IP, last)
 	fmt.Printf("Total Hosts:    %0.0f\n", totalHosts)
 	fmt.Printf("Netmask:        %s\n", net.IP(ipnet.Mask))
 	fmt.Printf("Wildcard Mask:  %s\n", wildcardIP)
